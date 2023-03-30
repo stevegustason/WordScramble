@@ -7,20 +7,6 @@
 
 import SwiftUI
 
-
-let input = """
-            a
-            b
-            c
-            """
-// Separates out the components by each new line, so this would create an array ["a", "b", "c"]
-let letters = input.components(separatedBy: "\n")
-
-// You can use randomElement to pick a random element from an array
-let letter = letters.randomElement()
-// randomElement returns an optional string so you have to unwrap or nil coalesce it. You can also used trimmingCharacters to get rid of certain characters, in this case white space and new lines
-let trimmed = letter?.trimmingCharacters(in: .whitespacesAndNewlines)
-
 // UIKit has a spell checker we can use. First, we make a word to check and an instance of UITextChecker
 let word = "swift"
 let checker = UITextChecker()
@@ -34,29 +20,73 @@ let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, star
 // Now we can check for the special NSNotFound value which would indicate if the word was spelled correctly
 let allGood = misspelledRange.location == NSNotFound
 
+
+
 struct ContentView: View {
-    let people = ["Finn", "Leia", "Luke", "Rey"]
-
-    var body: some View {
-        VStack {
-            // Lists can combine static and dynamic content
-            List {
-                Text("Static Row")
+    // Array of strings to store words the user has entered previously
+    @State private var usedWords = [String]()
+    // Variable to hold the word from which the user is making new words
+    @State private var rootWord = ""
+    // Variable to bind to text field for user to enter new words
+    @State private var newWord = ""
+    
+    func addNewWord() {
+        // Take our new word, make it all lower case, and trim any white spaces or new lines
+        let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Check to make sure our answer isn't blank - if it is, simply return
+        guard answer.count > 0 else { return }
+        
+        // Insert our new word into our list of used words at the beginning of the array using an animation to make it look nice
+        withAnimation {
+            usedWords.insert(answer, at: 0)
+        }
+        // Reset newWord to be blank so a user can continue entering more words
+        newWord = ""
+    }
+    
+    func startGame() {
+        // Find the url for start.txt in our bundle
+        if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
+            // Load start.txt into a string
+            if let startWords = try? String(contentsOf: startWordsURL) {
+                // Split the string into an array of strings, splitting on line breaks
+                let allWords = startWords.components(separatedBy: "\n")
                 
-                // When we need to identify each unique item in an array, we can pass the id \.self - this will make it so that if something is added or removed from the array it doesn't need to recalculate the whole thing
-                ForEach(people, id: \.self) {
-                    Text($0)
-                }
-
-                Text("Static Row")
-            }
-            .listStyle(.grouped)
-            
-            // If the list is made entirely of dynamic content, you can skip the ForEach entirely like so
-            List(0..<5) {
-                Text("Dynamic row \($0)")
+                // Pick a random word, or use silkworm as the default
+                rootWord = allWords.randomElement() ?? "silkworm"
+                
+                return
             }
         }
+        // If we make it here, there was a problem, so we should trigger a crash and report the error
+        fatalError("Could not load start.txt from bundle")
+    }
+
+    var body: some View {
+        NavigationView {
+            List {
+                Section {
+                    TextField("Enter your word", text: $newWord)
+                        .textInputAutocapitalization(.never)
+                }
+                
+                Section {
+                    ForEach(usedWords, id: \.self) { word in
+                        HStack {
+                            Image(systemName: "\(word.count).circle")
+                            Text(word)
+                        }
+                    }
+                }
+            }
+        }
+        // Add our random root word as the navigation title
+        .navigationTitle(rootWord)
+        // When a user hits enter, call the addNewWord function
+        .onSubmit(addNewWord)
+        // When the view is first shown, call the startGame function to kick things off
+        .onAppear(perform: startGame)
     }
 }
 
