@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var rootWord = ""
     // Variable to bind to text field for user to enter new words
     @State private var newWord = ""
+    // Variable to track the user's score
+    @State private var score = 0
     
     // Function to have a user enter a word, format it, then add it to an array that will be displayed
     func addNewWord() {
@@ -57,6 +59,7 @@ struct ContentView: View {
         }
         // Reset newWord to be blank so a user can continue entering more words
         newWord = ""
+        score += answer.count
     }
     
     // Function to start the game - load our start.txt file and pick a random word
@@ -70,6 +73,12 @@ struct ContentView: View {
                 
                 // Pick a random word, or use silkworm as the default
                 rootWord = allWords.randomElement() ?? "silkworm"
+                
+                // Reset score at 0
+                score = 0
+                
+                // Reset used words to an empty string
+                usedWords = [String]()
                 
                 return
             }
@@ -138,15 +147,15 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            List {
-                Section {
+            VStack {
+                Text("Score: \(score)")
+                    .font(.title3)
+                List {
                     // Simple text field bound to our newWord variable for users to enter their words
                     TextField("Enter your word", text: $newWord)
                     // This modifier makes it so that the first letter of words is not capitalized by default so it doesn't look weird when a user enters a word and it gets automatically lowercased
                         .textInputAutocapitalization(.never)
-                }
-                
-                Section {
+            
                     // For each of our words in our usedWords array, add a row that contains an icon with the number of letters in the word the user entered alongside the word
                     ForEach(usedWords, id: \.self) { word in
                         HStack {
@@ -155,18 +164,22 @@ struct ContentView: View {
                         }
                     }
                 }
-            }
-            // Add our random root word as the navigation title
-            .navigationTitle(rootWord)
-            // When a user hits enter, call the addNewWord function
-            .onSubmit(addNewWord)
-            // When the view is first shown, call the startGame function to kick things off
-            .onAppear(perform: startGame)
-            // Show our alert when showingError is True
-            .alert(errorTitle, isPresented: $showingError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
+                // Add our random root word as the navigation title
+                .navigationTitle(rootWord)
+                // When a user hits enter, call the addNewWord function
+                .onSubmit(addNewWord)
+                // When the view is first shown, call the startGame function to kick things off
+                .onAppear(perform: startGame)
+                // Show our alert when showingError is True
+                .alert(errorTitle, isPresented: $showingError) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text(errorMessage)
+                }
+                // Add a button so users can restart with a new word whenever they want to
+                .toolbar {
+                    Button("Restart", action: startGame)
+                }
             }
         }
     }
