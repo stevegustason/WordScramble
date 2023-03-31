@@ -41,6 +41,16 @@ struct ContentView: View {
             return
         }
         
+        guard isLongEnough(word: answer) else {
+            wordError(title: "Word not long enough", message: "3 letters barely counts!")
+            return
+        }
+        
+        guard isNew(word: answer) else {
+            wordError(title: "Can't use root word", message: "At least try to think of something yourself!")
+            return
+        }
+        
         // Insert our new word into our list of used words at the beginning of the array using an animation to make it look nice
         withAnimation {
             usedWords.insert(answer, at: 0)
@@ -102,6 +112,16 @@ struct ContentView: View {
         
         // Now we can check for the special NSNotFound value which would indicate if the word was spelled correctly and return that boolean
         return misspelledRange.location == NSNotFound
+    }
+    
+    // Check to see if the user's entered word is longer than 3 letters
+    func isLongEnough(word: String) -> Bool {
+        word.count > 3
+    }
+    
+    // Check to make sure the user's entered word isn't just the original word
+    func isNew(word: String) -> Bool {
+        !(word == rootWord)
     }
     
     // Create properties to display any error alerts
